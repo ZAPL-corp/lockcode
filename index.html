@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Tree to npm Ball</title>
+    <!-- Tailwind CSS for styling UI overlay elements -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        .ui-layer {
+            position: relative;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .interactive {
+            pointer-events: auto;
+        }
+        /* Glassmorphism panel */
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glow-btn {
+            background: linear-gradient(135deg, #cb3837 0%, #e53e3e 100%);
+            box-shadow: 0 0 25px rgba(203, 56, 55, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glow-btn:hover {
+            box-shadow: 0 0 35px rgba(203, 56, 55, 0.7), 0 0 10px rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+        /* Smooth fade-in & slide-up classes */
+        .fade-slide-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .fade-slide-up.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .pulse-subtle {
+            animation: pulseGlow 4s infinite alternate;
+        }
+        @keyframes pulseGlow {
+            0% { filter: drop-shadow(0 0 15px rgba(203, 56, 55, 0.4)); }
+            100% { filter: drop-shadow(0 0 30px rgba(203, 56, 55, 0.8)); }
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col justify-between items-center relative select-none">
+
+    <!-- Pure Canvas Animation Background -->
+    <canvas id="cosmicCanvas"></canvas>
+
+    <!-- Header / Status Bar -->
+    <header class="ui-layer w-full p-6 flex justify-between items-center max-w-6xl mx-auto">
+        <div class="flex items-center space-x-3">
+            <div class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></div>
+            <span class="text-xs tracking-wider uppercase text-gray-400 font-medium">Sequence: <span id="statusText" class="text-red-400">Drawing Constellation Tree</span></span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button id="replayBtn" class="interactive text-xs uppercase tracking-wider text-gray-400 hover:text-white bg-gray-900/80 hover:bg-gray-800 border border-gray-800 px-4 py-2 rounded-full transition-all flex items-center space-x-2">
+                <i class="fa-solid fa-rotate-right"></i>
+                <span>Replay</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Center Stage Container (npm Logo & Package info) -->
+    <main class="ui-layer flex-grow flex flex-col items-center justify-center text-center px-4">
+        <div id="npmContainer" class="fade-slide-up flex flex-col items-center">
+            <!-- npm Icon Badge -->
+            <div class="w-20 h-20 md:w-24 md:h-24 rounded-2xl glass-panel flex items-center justify-center mb-6 pulse-subtle border border-red-500/30">
+                <i class="fa-brands fa-npm text-red-500 text-5xl md:text-6xl"></i>
+            </div>
+            <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-400 mb-2">
+                @zapl/lockcode
+            </h1>
+            <p class="text-gray-400 text-sm md:text-base max-w-md font-light">
+                Secure cryptographic token generation & locking utilities for modern workflows.
+            </p>
+        </div>
+    </main>
+
+    <!-- Bottom Action Area -->
+    <footer class="ui-layer w-full pb-10 flex justify-center items-center px-4 max-w-6xl mx-auto">
+        <div id="buttonContainer" class="fade-slide-up">
+            <!-- Button with exact wording: Open in [icon] (no redundant npm word at the end) -->
+            <a href="https://www.npmjs.com/package/@zapl/lockcode" target="_blank" rel="noopener noreferrer" 
+               class="interactive glow-btn text-white font-semibold text-base md:text-lg px-8 py-4 rounded-full flex items-center space-x-3 group">
+                <span class="tracking-wide">Open in</span>
+                <span class="bg-white/10 px-3 py-1.5 rounded-lg flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                    <i class="fa-brands fa-npm text-white text-xl"></i>
+                </span>
+                <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform ml-1"></i>
+            </a>
+        </div>
+    </footer>
+
+    <!-- Pure HTML5 Canvas & Vanilla JS Animation Engine -->
+    <script>
+        window.addEventListener('load', () => {
+            const canvas = document.getElementById('cosmicCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            let width, height;
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            // Background subtle stars
+            const stars = Array.from({ length: 120 }, () => ({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                radius: Math.random() * 1.2,
+                alpha: Math.random() * 0.6 + 0.2
+            }));
+
+            let animationStartTime = performance.now();
+            let phase = 0; // 0: Tree growth, 1: Morph to ball, 2: Sphere float & rotate
+
+            const statusText = document.getElementById('statusText');
+            const npmContainer = document.getElementById('npmContainer');
+            const buttonContainer = document.getElementById('buttonContainer');
+            let uiRevealed = false;
+
+            const rootX = () => width / 2;
+            const rootY = () => height * 0.62;
+
+            let treeNodes = [];
+            let connections = [];
+
+            // Programmatically construct a minimalist tree hierarchy
+            function initTree() {
+                treeNodes = [];
+                connections = [];
+
+                const rx = rootX();
+                const ry = rootY();
+
+                // Root node
+                treeNodes.push({ id: 0, x: rx, y: ry, tx: rx, ty: ry });
+
+                // Main trunk
+                let parentId = 0;
+                let currentY = ry;
+                for (let i = 1; i <= 6; i++) {
+                    currentY -= 28;
+                    treeNodes.push({ id: i, x: rx, y: currentY, tx: rx, ty: currentY });
+                    connections.push({ from: parentId, to: i });
+                    parentId = i;
+                }
+
+                // Recursive procedural branch generator
+                function buildBranches(pId, depth, cx, cy, spreadAngle) {
+                    if (depth > 4) return;
+                    const count = 2;
+                    for (let c = 0; c < count; c++) {
+                        const angle = -Math.PI / 2 + (c === 0 ? -spreadAngle : spreadAngle) + (Math.random() - 0.5) * 0.15;
+                        const length = 35 + Math.random() * 25;
+                        const nx = cx + Math.cos(angle) * length;
+                        const ny = cy + Math.sin(angle) * length;
+
+                        const newId = treeNodes.length;
+                        treeNodes.push({ id: newId, x: cx, y: cy, tx: nx, ty: ny });
+                        connections.push({ from: pId, to: newId });
+
+                        buildBranches(newId, depth + 1, nx, ny, spreadAngle * 0.75);
+                    }
+                }
+
+                buildBranches(parentId, 1, rx, currentY, 0.65);
+
+                // Assign target coordinates on a sphere for ball morphing phase
+                const ballRadius = 75;
+                treeNodes.forEach((node, index) => {
+                    const phi = Math.acos(-1 + (2 * index) / treeNodes.length);
+                    const theta = Math.sqrt(treeNodes.length * Math.PI) * phi;
+                    
+                    node.ballX = rx + ballRadius * Math.cos(theta) * Math.sin(phi);
+                    node.ballY = (ry - 70) + ballRadius * Math.sin(theta) * Math.sin(phi);
+                    node.ballZ = ballRadius * Math.cos(phi);
+                });
+            }
+
+            initTree();
+
+            document.getElementById('replayBtn').addEventListener('click', () => {
+                animationStartTime = performance.now();
+                phase = 0;
+                uiRevealed = false;
+                npmContainer.classList.remove('active');
+                buttonContainer.classList.remove('active');
+                initTree();
+            });
+
+            function render(currentTime) {
+                const elapsed = (currentTime - animationStartTime) / 1000;
+                ctx.clearRect(0, 0, width, height);
+
+                // Draw background stars
+                ctx.fillStyle = '#ffffff';
+                stars.forEach(s => {
+                    ctx.globalAlpha = s.alpha;
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Control sequence timelines
+                if (elapsed < 3.2) {
+                    phase = 0;
+                    statusText.textContent = "Drawing Constellation Tree...";
+                } else if (elapsed < 6.0) {
+                    phase = 1;
+                    statusText.textContent = "Morphing into Energy Sphere...";
+                } else {
+                    phase = 2;
+                    statusText.textContent = "npm Package Ready";
+                    if (!uiRevealed) {
+                        uiRevealed = true;
+                        npmContainer.classList.add('active');
+                        setTimeout(() => buttonContainer.classList.add('active'), 350);
+                    }
+                }
+
+                const rx = rootX();
+                const ry = rootY() - 60;
+
+                // Position calculation per phase with smooth easing
+                treeNodes.forEach((node) => {
+                    if (phase === 0) {
+                        const p = Math.min(1, elapsed / 2.8);
+                        const ease = 1 - Math.pow(1 - p, 3);
+                        node.currentX = rx + (node.tx - rx) * ease;
+                        node.currentY = (rootY()) + (node.ty - (rootY())) * ease;
+                        node.currentAlpha = ease;
+                    } else if (phase === 1) {
+                        const p = Math.min(1, (elapsed - 3.2) / 2.2);
+                        const ease = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p;
+                        node.currentX = node.tx + (node.ballX - node.tx) * ease;
+                        node.currentY = node.ty + (node.ballY - node.ty) * ease;
+                        node.currentAlpha = 1.0;
+                    } else {
+                        // Phase 2: Smooth 3D Y-axis rotation of the sphere
+                        const angle = currentTime * 0.0006;
+                        const cosA = Math.cos(angle);
+                        const sinA = Math.sin(angle);
+
+                        const bx = node.ballX - rx;
+                        const by = node.ballY - ry;
+                        const bz = node.ballZ;
+
+                        const rotX = bx * cosA + bz * sinA;
+                        const rotZ = -bx * sinA + bz * cosA;
+
+                        node.currentX = rx + rotX;
+                        node.currentY = ry + by;
+                        node.currentZ = rotZ;
+                        node.currentAlpha = 0.75 + (rotZ / 150);
+                    }
+                });
+
+                // Render connections / lines
+                ctx.lineWidth = phase === 2 ? 0.7 : 1.1;
+                connections.forEach(conn => {
+                    const f = treeNodes[conn.from];
+                    const t = treeNodes[conn.to];
+
+                    if (phase === 2) {
+                        const dist = Math.hypot(f.currentX - t.currentX, f.currentY - t.currentY);
+                        if (dist < 70) {
+                            ctx.strokeStyle = `rgba(239, 68, 68, ${0.2 * ((f.currentAlpha + t.currentAlpha) / 2)})`;
+                            ctx.beginPath();
+                            ctx.moveTo(f.currentX, f.currentY);
+                            ctx.lineTo(t.currentX, t.currentY);
+                            ctx.stroke();
+                        }
+                    } else {
+                        const alpha = Math.min(f.currentAlpha, t.currentAlpha);
+                        ctx.strokeStyle = `rgba(239, 68, 68, ${0.35 * alpha})`;
+                        ctx.beginPath();
+                        ctx.moveTo(f.currentX, f.currentY);
+                        ctx.lineTo(t.currentX, t.currentY);
+                        ctx.stroke();
+                    }
+                });
+
+                // Render nodes
+                treeNodes.forEach(node => {
+                    ctx.fillStyle = '#ef4444';
+                    ctx.shadowColor = '#ef4444';
+                    ctx.shadowBlur = phase === 2 ? 10 : 6;
+                    ctx.globalAlpha = Math.max(0.2, node.currentAlpha);
+
+                    ctx.beginPath();
+                    const radius = phase === 2 ? Math.max(1, 2 + (node.currentZ || 0) * 0.02) : 2.2;
+                    ctx.arc(node.currentX, node.currentY, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.shadowBlur = 0;
+
+                // Core glow in sphere phase
+                if (phase >= 1) {
+                    const grad = ctx.createRadialGradient(rx, ry, 5, rx, ry, 85);
+                    grad.addColorStop(0, 'rgba(203, 56, 55, 0.2)');
+                    grad.addColorStop(1, 'transparent');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(rx, ry, 85, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                requestAnimationFrame(render);
+            }
+
+            requestAnimationFrame(render);
+        });
+    </script>
+</body>
+</html>
