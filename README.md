@@ -82,3 +82,6 @@ npx @zapl/lockcode
 ## Лицензия
 
 MIT — см. [LICENSE](LICENSE).
+
+
+Хихи а тут я монстрик Damirka!
