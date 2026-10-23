@@ -49,23 +49,34 @@ const EDU = {
   Claude: 'https://api.anthropic.com/v1'
 };
 
+const SUBMODELS = {
+  Gemini: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp', 'gemini-2.5-flash'],
+  OpenRouter: ['anthropic/claude-3.5-sonnet', 'openai/gpt-4o', 'deepseek/deepseek-chat'],
+  DeepSeek: ['deepseek-chat', 'deepseek-reasoner'],
+  OpenAI: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
+  Mistral: ['mistral-small-latest', 'mistral-medium-latest', 'mistral-large-latest'],
+  Claude: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022']
+};
+
 const STR = {
   ru: {
     tagline: 'Агент в терминале: читает проект, правит файлы, запускает тесты.',
     session: 'сессия',
     project: 'проект',
     model: 'модель',
+    submodel: 'подмодель',
     context: 'контекст',
     folder: 'папка',
     mode: 'режим',
-    hint: 'ctrl+c выход · /help команды · ↑ история',
+    hint: 'ctrl+c выход · введите / для меню · ↑ история',
     bye: 'до встречи',
     cancelled: 'отменено',
     provider: 'провайдер',
-    modelName: 'название модели (например deepseek-chat)',
+    modelName: 'название модели (например gemini-1.5-flash)',
     apiKey: 'API-ключ',
     baseUrl: 'базовый URL API (https://…)',
     added: 'добавлена',
+    deleted: 'удалена',
     keyNote: 'ключ сохранён локально; запросы пойдут напрямую к провайдеру',
     nothing: 'ничего не найдено',
     server: 'SERVER',
@@ -81,16 +92,18 @@ const STR = {
     tokens: 'ток.',
     system: 'Ты — LOCKCODE, агент для работы с кодом в терминале. Отвечай кратко, точно и по делу.',
     help: [
-      ['/help', 'этот список'],
-      ['/mode [chat|agent]', 'режим работы'],
-      ['/models', 'модели SERVER и USER'],
-      ['/add', 'добавить модель и ключ'],
+      ['/help', 'этот список команд'],
+      ['/mode [chat|agent]', 'режим работы (чат или агент)'],
+      ['/models', 'список моделей SERVER и USER'],
+      ['/submodel', 'выбрать подмодель (версию) для текущего провайдера'],
+      ['/add', 'добавить новую модель и ключ'],
       ['/model <имя>', 'выбрать активную модель'],
-      ['/limits', 'расход лимитов'],
-      ['/folder <путь>', 'папка проекта'],
+      ['/model -del <имя>', 'удалить пользовательскую модель'],
+      ['/limits', 'расход лимитов сессии'],
+      ['/folder <путь>', 'сменить папку проекта'],
       ['/lang [ru|en]', 'язык интерфейса'],
       ['/clear', 'очистить экран и контекст'],
-      ['/exit', 'выход']
+      ['/exit', 'выход из программы']
     ]
   },
   en: {
@@ -98,17 +111,19 @@ const STR = {
     session: 'session',
     project: 'project',
     model: 'model',
+    submodel: 'submodel',
     context: 'context',
     folder: 'folder',
     mode: 'mode',
-    hint: 'ctrl+c exit · /help commands · ↑ history',
+    hint: 'ctrl+c exit · type / for menu · ↑ history',
     bye: 'bye',
     cancelled: 'cancelled',
     provider: 'provider',
-    modelName: 'model name (e.g. deepseek-chat)',
+    modelName: 'model name (e.g. gemini-1.5-flash)',
     apiKey: 'API key',
     baseUrl: 'API base URL (https://…)',
     added: 'added',
+    deleted: 'deleted',
     keyNote: 'key saved locally; requests go straight to the provider',
     nothing: 'nothing found',
     server: 'SERVER',
@@ -124,11 +139,13 @@ const STR = {
     tokens: 'tok.',
     system: 'You are LOCKCODE, a terminal coding agent. Answer briefly, precisely and to the point.',
     help: [
-      ['/help', 'this list'],
+      ['/help', 'this command list'],
       ['/mode [chat|agent]', 'work mode'],
       ['/models', 'SERVER and USER models'],
+      ['/submodel', 'select submodel (version)'],
       ['/add', 'add a model and key'],
       ['/model <name>', 'select active model'],
+      ['/model -del <name>', 'delete custom model'],
       ['/limits', 'usage limits'],
       ['/folder <path>', 'project folder'],
       ['/lang [ru|en]', 'interface language'],
@@ -169,7 +186,7 @@ function ensureConfig() {
   if (!config.get('activeModel')) config.set('activeModel', 'Mistral (Server)');
   if (!config.get('models')) {
     config.set('models', {
-      server: [{ name: 'Mistral (Server)', provider: 'Mistral AI', status: 'Server', limitUsed: 0, limitMax: 100 }],
+      server: [{ name: 'Mistral (Server)', provider: 'Mistral AI', model: 'mistral-small-latest', status: 'Server', limitUsed: 0, limitMax: 100 }],
       user: []
     });
   }
@@ -269,9 +286,11 @@ function shortPath(target) {
 function infoCard() {
   const s = t();
   const width = cardWidth();
+  const currentModel = activeModel();
+  const modelDisplay = currentModel ? `${currentModel.name} (${currentModel.model || 'default'})` : '—';
   const rows = [
     [s.project, path.basename(config.get('projectFolder')) || '—'],
-    [s.model, config.get('activeModel')],
+    [s.model, modelDisplay],
     [s.context, config.get('contextWindow')],
     [s.folder, shortPath(config.get('projectFolder'))],
     [s.mode, config.get('mode')]
@@ -319,6 +338,11 @@ function clearScreen() {
     readline.cursorTo(process.stdout, 0, 0);
     readline.clearScreenDown(process.stdout);
   }
+}
+
+function refreshScreen() {
+  clearScreen();
+  renderHeader();
 }
 
 function ask(query) {
@@ -380,15 +404,6 @@ function fail(text) {
   console.log('  ' + paint(C.amber, '! ') + paint(C.ink, text));
 }
 
-function reply(lines) {
-  console.log('');
-  console.log('  ' + paint(C.b, '●') + ' ' + paint(C.dim, 'lockcode · ' + config.get('mode') + ' · ' + config.get('activeModel')));
-  for (const raw of lines) {
-    wrap(raw, Math.min(termWidth() - 4, 68)).forEach((line) => console.log('  ' + paint(C.body, line)));
-  }
-  console.log('');
-}
-
 function postJson(url, payload, apiKey, timeoutMs) {
   return new Promise((resolve, reject) => {
     let parsed;
@@ -399,16 +414,21 @@ function postJson(url, payload, apiKey, timeoutMs) {
     }
     const lib = parsed.protocol === 'http:' ? http : https;
     const body = JSON.stringify(payload);
+    
+    const headers = {
+      'content-type': 'application/json',
+      'user-agent': 'lockcode-cli/1.0',
+      'content-length': Buffer.byteLength(body)
+    };
+    if (apiKey) {
+      headers['authorization'] = 'Bearer ' + apiKey;
+    }
+
     const req = lib.request(
       parsed,
       {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: 'Bearer ' + apiKey,
-          'user-agent': 'lockcode-cli/1.0',
-          'content-length': Buffer.byteLength(body)
-        }
+        headers
       },
       (res) => {
         const chunks = [];
@@ -454,7 +474,7 @@ function extractReply(data) {
 function activeModel() {
   const name = config.get('activeModel');
   const list = [].concat(config.get('models').server || [], config.get('models').user || []);
-  return list.find((model) => model.name === name) || null;
+  return list.find((model) => model.name === name) || list[0] || null;
 }
 
 function endpointOf(model) {
@@ -463,12 +483,13 @@ function endpointOf(model) {
   return base ? String(base).replace(/\/+$/, '') : null;
 }
 
-function showHelp() {
+function showInteractiveMenu() {
   const s = t();
   console.log('');
+  console.log('  ' + paint(C.amber, '✦ Claude / Gemini Style Command Palette:'));
   const pad = Math.max.apply(null, s.help.map((row) => row[0].length)) + 3;
   s.help.forEach((row) => {
-    console.log('  ' + paint(C.amber, row[0] + ' '.repeat(pad - row[0].length)) + paint(C.dim, row[1]));
+    console.log('    ' + paint(C.amber, row[0] + ' '.repeat(pad - row[0].length)) + paint(C.dim, row[1]));
   });
   console.log('');
 }
@@ -488,9 +509,61 @@ function showModels() {
     list.forEach((model) => {
       const mark = model.name === active ? paint(C.amber, '* ') : '  ';
       const hasKey = model.apiKey ? paint(C.green, '✓') : paint(C.faint, '·');
-      console.log('  ' + mark + hasKey + ' ' + paint(C.ink, model.name) + paint(C.dim, ' — ' + model.provider + ' · ' + model.status));
+      const subInfo = model.model ? ` [${model.model}]` : '';
+      console.log('  ' + mark + hasKey + ' ' + paint(C.ink, model.name + subInfo) + paint(C.dim, ' — ' + model.provider + ' · ' + model.status));
     });
   });
+  console.log('');
+}
+
+async function handleSubmodel(arg) {
+  const s = t();
+  const model = activeModel();
+  if (!model) {
+    fail('Нет активной модели');
+    return;
+  }
+  const availableSubmodels = SUBMODELS[model.provider] || [];
+  if (!availableSubmodels.length) {
+    fail(`У провайдера ${model.provider} нет предопределенных подмоделей.`);
+    return;
+  }
+
+  const query = (arg || '').trim();
+  if (!query) {
+    console.log('');
+    console.log('  ' + paint(C.amber, `✦ Подмодели для ${model.provider}:`));
+    availableSubmodels.forEach((sub, idx) => {
+      const current = model.model === sub ? paint(C.green, ' (активна)') : '';
+      console.log(`    ${idx + 1}. ${paint(C.ink, sub)}${current}`);
+    });
+    console.log('  ' + paint(C.dim, 'Использование: /submodel <название или номер>'));
+    console.log('');
+    return;
+  }
+
+  let selectedSub = '';
+  const num = Number(query);
+  if (!isNaN(num) && num > 0 && num <= availableSubmodels.length) {
+    selectedSub = availableSubmodels[num - 1];
+  } else {
+    const found = availableSubmodels.find((sub) => sub.toLowerCase().includes(query.toLowerCase()));
+    if (found) selectedSub = found;
+    else selectedSub = query;
+  }
+
+  const models = config.get('models');
+  let foundObj = (models.user || []).find((m) => m.name === model.name);
+  if (!foundObj) {
+    foundObj = (models.server || []).find((m) => m.name === model.name);
+  }
+  if (foundObj) {
+    foundObj.model = selectedSub;
+    config.set('models', models);
+    ok(`Подмодель установлена: ${selectedSub}`);
+  } else {
+    fail('Не удалось обновить модель в конфигурации');
+  }
   console.log('');
 }
 
@@ -540,8 +613,9 @@ async function addModel() {
   const provider = byName || byNumber;
   if (!provider) return fail(`${s.nothing}: ${picked} — 1…${providers.length}`);
 
-  const modelName = (await ask('  ' + paint(C.amber, '? ') + s.modelName + ': ')).trim();
-  if (!modelName) return note(s.cancelled);
+  const defaultModelName = SUBMODELS[provider] ? SUBMODELS[provider][0] : 'default-model';
+  const modelNameInput = (await ask('  ' + paint(C.amber, '? ') + `название/модель (по умолчанию ${defaultModelName}): `)).trim();
+  const modelId = modelNameInput || defaultModelName;
 
   let endpoint = EDU[provider];
   if (provider === 'Custom' || !endpoint) {
@@ -554,24 +628,55 @@ async function addModel() {
   if (!apiKey) return note(s.cancelled);
 
   const models = config.get('models');
+  const customName = `${provider}_${Date.now().toString().slice(-4)}`;
   models.user.push({
-    name: modelName,
+    name: customName,
     provider,
     endpoint,
     apiKey,
-    model: modelName,
+    model: modelId,
     status: 'Ready',
     limitUsed: 0,
     limitMax: 100
   });
   config.set('models', models);
-  config.set('activeModel', modelName);
+  config.set('activeModel', customName);
 
   console.log('');
-  ok(`${modelName} — ${s.added}`);
+  ok(`${customName} (${modelId}) — ${s.added}`);
   note(s.keyNote);
   console.log('');
-  renderHeader();
+}
+
+async function deleteModel(arg) {
+  const s = t();
+  const targetName = (arg || '').trim();
+  if (!targetName) {
+    return fail('Укажите название модели для удаления, например: /model -del <название>');
+  }
+
+  const models = config.get('models');
+  const userModels = models.user || [];
+  const index = userModels.findIndex((m) => m.name.toLowerCase() === targetName.toLowerCase());
+
+  if (index === -1) {
+    return fail(`Пользовательская модель "${targetName}" не найдена.`);
+  }
+
+  const removed = userModels.splice(index, 1)[0];
+  config.set('models', models);
+
+  if (config.get('activeModel') === removed.name) {
+    const serverModels = models.server || [];
+    if (serverModels.length > 0) {
+      config.set('activeModel', serverModels[0].name);
+    } else {
+      config.set('activeModel', 'None');
+    }
+  }
+
+  ok(`Модель "${removed.name}" успешно ${s.deleted}`);
+  console.log('');
 }
 
 async function setFolder(arg) {
@@ -583,7 +688,6 @@ async function setFolder(arg) {
   config.set('projectFolder', target);
   ok(`${s.folderSet}: ${shortPath(target)}`);
   console.log('');
-  renderHeader();
 }
 
 function setMode(arg) {
@@ -593,7 +697,6 @@ function setMode(arg) {
   config.set('mode', mode);
   ok(`${s.modeSet}: ${mode}`);
   console.log('');
-  renderHeader();
 }
 
 function setLanguage(arg) {
@@ -603,7 +706,6 @@ function setLanguage(arg) {
   config.set('language', language);
   ok(`${s.langSet}: ${language}`);
   console.log('');
-  renderHeader();
 }
 
 async function respond(text) {
@@ -613,8 +715,7 @@ async function respond(text) {
   if (!model || !model.apiKey) {
     addMsg('user', text);
     console.log('');
-    console.log('  ' + paint(C.dim, s.noKey + ' ' + (model ? model.name : '') + '. ' + s.addHint));
-    note(`${s.ctx}: «${text}»`);
+    console.log('  ' + paint(C.dim, s.noKey + ' ' + (model ? model.name : '') + '. /add'));
     console.log('');
     return;
   }
@@ -623,25 +724,49 @@ async function respond(text) {
   if (!endpoint) {
     addMsg('user', text);
     console.log('');
-    console.log('  ' + paint(C.dim, s.unknownEndpoint + ' ' + model.name + '. ' + '/add'));
+    console.log('  ' + paint(C.dim, s.unknownEndpoint + ' ' + model.name + '. /add'));
     console.log('');
     return;
   }
 
   addMsg('user', text);
-  console.log('  ' + paint(C.faint, '⋯ ' + s.asking + ' ' + model.name + '…'));
+
+  const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+  let frameIndex = 0;
+  
+  process.stdout.write('\n');
+  const spinnerTimer = setInterval(() => {
+    const frame = spinnerFrames[frameIndex = (frameIndex + 1) % spinnerFrames.length];
+    process.stdout.write(`\r  ${paint(C.amber, frame)} ${paint(C.dim, '🔒 lockcode is thinking (' + model.name + ' [' + (model.model || 'default') + '])...')}   `);
+  }, 80);
 
   try {
     const messages = [{ role: 'system', content: s.system }].concat(history);
-    const data = await postJson(endpoint + '/chat/completions', { model: model.model, messages, temperature: 0.2 }, model.apiKey);
+    const payload = {
+      model: model.model || 'gemini-1.5-flash',
+      messages,
+      temperature: 0.2
+    };
+
+    const data = await postJson(endpoint + '/chat/completions', payload, model.apiKey);
+    
+    clearInterval(spinnerTimer);
+    process.stdout.write('\r\x1b[K');
+
     const { text: answer, usage } = extractReply(data);
     addMsg('assistant', answer);
-    const tail = usage ? ' — ' + ((usage.prompt_tokens || 0) + (usage.completion_tokens || 0)) + ' ' + s.tokens : '';
-    console.log('');
-    console.log('  ' + paint(C.b, '●') + ' ' + paint(C.dim, 'lockcode · ' + config.get('mode') + ' · ' + model.name + tail));
+    
+    const promptTokens = usage?.prompt_tokens || usage?.promptTokenCount || 0;
+    const completionTokens = usage?.completion_tokens || usage?.candidatesTokenCount || 0;
+    const totalTokens = promptTokens + completionTokens;
+    const tail = totalTokens > 0 ? ` — ${totalTokens} ${s.tokens}` : '';
+
+    console.log('  ' + paint(C.amber, '✦') + ' ' + paint(C.ink, 'Claude Code') + paint(C.dim, ' · ' + config.get('mode') + ' · ' + model.name + tail));
     wrap(answer, Math.min(termWidth() - 4, 68)).forEach((line) => console.log('  ' + paint(C.body, line)));
     console.log('');
   } catch (error) {
+    clearInterval(spinnerTimer);
+    process.stdout.write('\r\x1b[K');
     console.log('');
     fail(s.requestFailed + ': ' + (error && error.message ? error.message : String(error)));
     console.log('');
@@ -649,55 +774,82 @@ async function respond(text) {
 }
 
 async function runCommand(input) {
-  const [name, ...rest] = input.split(/\s+/);
-  const arg = rest.join(' ').trim();
-  const command = name.toLowerCase();
+  const parts = input.trim().split(/\s+/);
+  const command = parts[0].toLowerCase();
+  const arg1 = parts[1] || '';
+  const restArg = parts.slice(1).join(' ').trim();
+
+  let needClear = true;
 
   switch (command) {
     case '/help':
     case '/?':
-      showHelp();
-      return false;
+      showInteractiveMenu();
+      needClear = false;
+      break;
     case '/models':
       showModels();
-      return false;
+      needClear = false;
+      break;
+    case '/submodel':
+      await handleSubmodel(restArg);
+      needClear = false;
+      break;
     case '/add':
       await addModel();
-      return false;
-    case '/model': {
-      const models = [].concat(config.get('models').server || [], config.get('models').user || []);
-      if (!arg) return showModels();
-      const found = models.find((model) => model.name.toLowerCase() === arg.toLowerCase());
-      if (!found) return fail(`${t().nothing}: ${arg}`);
-      config.set('activeModel', found.name);
-      ok(`${t().model}: ${found.name}`);
-      return false;
-    }
+      break;
+    case '/model':
+      if (arg1.toLowerCase() === '-del') {
+        await deleteModel(parts[2] || '');
+      } else {
+        const models = [].concat(config.get('models').server || [], config.get('models').user || []);
+        if (!restArg) {
+          showModels();
+          needClear = false;
+          break;
+        }
+        const found = models.find((model) => model.name.toLowerCase() === restArg.toLowerCase());
+        if (!found) {
+          fail(`${t().nothing}: ${restArg}`);
+          needClear = false;
+          break;
+        }
+        config.set('activeModel', found.name);
+        ok(`${t().model}: ${found.name}`);
+      }
+      break;
     case '/limits':
       showLimits();
-      return false;
+      needClear = false;
+      break;
     case '/mode':
-      setMode(arg);
-      return false;
+      setMode(arg1);
+      break;
     case '/folder':
-      await setFolder(arg);
-      return false;
+      await setFolder(restArg);
+      break;
     case '/lang':
-      setLanguage(arg);
-      return false;
+      setLanguage(arg1);
+      break;
     case '/clear':
       history = [];
-      clearScreen();
-      renderHeader();
-      return false;
+      refreshScreen();
+      needClear = false;
+      break;
     case '/exit':
     case '/quit':
     case '/q':
       return true;
     default:
-      fail(`${name} — /help`);
-      return false;
+      fail(`${command} — неверная команда. Введите / для вызова списка.`);
+      needClear = false;
+      break;
   }
+
+  if (needClear) {
+    refreshScreen();
+  }
+  return false;
 }
 
 async function loop() {
@@ -705,6 +857,12 @@ async function loop() {
     const raw = await ask(paint(C.amber, '❯ '));
     const input = raw.trim();
     if (!input) continue;
+
+    if (input === '/') {
+      showInteractiveMenu();
+      continue;
+    }
+
     if (input.startsWith('/')) {
       const quit = await runCommand(input);
       if (quit) break;
@@ -749,8 +907,7 @@ async function main() {
 
   if (config.get('firstRun') !== false) await chooseLanguage();
 
-  clearScreen();
-  renderHeader();
+  refreshScreen();
   await loop();
   finish(0);
 }
