@@ -5,6 +5,8 @@
 
 # LOCKCODE
 
+### [CloudFlare Pages](https://lockcode.pages.dev) * [GitHub Pages](https://zapl-corp.github.io/lockcode/) * [npm](https://www.npmjs.com/package/@zapl/lockcode)
+
 Терминальный AI-агент в стиле opencode: пиксельный логотип, карточка сессии,
 промпт `❯` и слэш-команды. Запросы уходят напрямую к провайдеру по OpenAI-совместимому
 API — без прокси и посредников.
