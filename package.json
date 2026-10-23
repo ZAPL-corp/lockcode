@@ -1,0 +1,39 @@
+{
+  "name": "@zapl/lockcode",
+  "version": "1.0.0",
+  "description": "Terminal AI coding agent with an opencode-style interface",
+  "main": "index.js",
+  "bin": {
+    "lockcode": "index.js"
+  },
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node index.js",
+    "prepublishOnly": "node --check index.js"
+  },
+  "keywords": [
+    "cli",
+    "ai",
+    "agent",
+    "llm",
+    "terminal",
+    "coding-assistant",
+    "opencode"
+  ],
+  "author": "LOCKCODE contributors",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "conf": "^10.2.0"
+  }
+}
