@@ -1,5 +1,3 @@
-![1.3.000](https://github.com/ZAPL-corp/lockcode/blob/main/images/1.4.100.jpg)
-
 # LOCKCODE
 
 ### [CloudFlare Pages](https://lockcode.pages.dev) * [GitHub Pages](https://zapl-corp.github.io/lockcode/) * [npm](https://www.npmjs.com/package/@zapl/lockcode)
