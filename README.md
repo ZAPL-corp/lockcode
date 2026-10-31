@@ -12,6 +12,9 @@ API — без прокси и посредников.
 
 ```bash
 npm install -g @zapl/lockcode
+```
+Запуск из любой директории:
+```bash
 lockcode
 ```
 
