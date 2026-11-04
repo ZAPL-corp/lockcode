@@ -85,3 +85,6 @@ npx @zapl/lockcode
 ## Лицензия
 
 MIT — см. [LICENSE](LICENSE).
+
+## Контрибуторы
+[![Contributors](https://contrib.rocks/image?repo=ZAPL-corp/lockcode)](https://github.com/ZAPL-corp/lockcode/graphs/contributors)
