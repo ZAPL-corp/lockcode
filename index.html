@@ -1,345 +1,273 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cosmic Tree to npm Ball</title>
-    <!-- Tailwind CSS for styling UI overlay elements -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Font Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #030712;
-            color: #f3f4f6;
-            overflow: hidden;
-        }
-        canvas {
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-        .ui-layer {
-            position: relative;
-            z-index: 10;
-            pointer-events: none;
-        }
-        .interactive {
-            pointer-events: auto;
-        }
-        /* Glassmorphism panel */
-        .glass-panel {
-            background: rgba(17, 24, 39, 0.65);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .glow-btn {
-            background: linear-gradient(135deg, #cb3837 0%, #e53e3e 100%);
-            box-shadow: 0 0 25px rgba(203, 56, 55, 0.4);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .glow-btn:hover {
-            box-shadow: 0 0 35px rgba(203, 56, 55, 0.7), 0 0 10px rgba(255, 255, 255, 0.4);
-            transform: translateY(-2px);
-        }
-        /* Smooth fade-in & slide-up classes */
-        .fade-slide-up {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .fade-slide-up.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .pulse-subtle {
-            animation: pulseGlow 4s infinite alternate;
-        }
-        @keyframes pulseGlow {
-            0% { filter: drop-shadow(0 0 15px rgba(203, 56, 55, 0.4)); }
-            100% { filter: drop-shadow(0 0 30px rgba(203, 56, 55, 0.8)); }
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LOCKCODE — документация</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#161616;--panel:#1c1c1c;--code:#202020;--line:#2e2e2e;
+  --text:#d4d4d4;--muted:#8a8a8a;--head:#f0f0f0;--accent:#bdbdbd;--hover:#262626;
+  --side:248px;--rail:56px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 16px);scroll-behavior:smooth}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+#side{position:fixed;top:env(safe-area-inset-top,0px);bottom:env(safe-area-inset-bottom,0px);left:0;width:var(--side);
+  background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;
+  transition:width .18s ease;overflow:hidden;z-index:5}
+body.collapsed #side{width:var(--rail)}
+.brand{display:flex;align-items:center;gap:10px;height:52px;padding:0 17px;border-bottom:1px solid var(--line);color:var(--head);font-weight:600;letter-spacing:.04em;white-space:nowrap}
+nav{flex:1;overflow-y:auto;overflow-x:hidden;padding:8px}
+nav a{display:flex;align-items:center;gap:12px;height:38px;padding:0 10px;border-radius:6px;color:var(--muted);text-decoration:none;white-space:nowrap}
+nav a:hover{background:var(--hover);color:var(--text)}
+nav a.on{background:var(--hover);color:var(--head)}
+#tog{display:flex;align-items:center;gap:12px;height:44px;margin:0;padding:0 18px;border:0;border-top:1px solid var(--line);
+  background:none;color:var(--muted);font:inherit;cursor:pointer;white-space:nowrap;text-align:left}
+#tog:hover{color:var(--text);background:var(--hover)}
+#tog svg{transition:transform .18s ease}
+body.collapsed #tog svg{transform:rotate(180deg)}
+body.collapsed .brand span,body.collapsed nav a span,body.collapsed #tog span{display:none}
+body.collapsed .brand,body.collapsed #tog{justify-content:center;padding:0}
+body.collapsed nav a{justify-content:center;padding:0}
+
+main{margin-left:var(--side);padding:40px 32px 80px;transition:margin-left .18s ease}
+body.collapsed main{margin-left:var(--rail)}
+.wrap{max-width:760px;margin:0 auto}
+h1{margin:0 0 8px;font-size:30px;color:var(--head);letter-spacing:.02em}
+h2{margin:0 0 14px;padding-top:6px;font-size:21px;color:var(--head);display:flex;align-items:center;gap:10px}
+h2 svg{color:var(--muted)}
+section{padding:28px 0;border-top:1px solid var(--line)}
+section:first-of-type{border-top:0;padding-top:0}
+p{margin:0 0 12px}
+.lead{color:var(--muted);font-size:16px}
+a{color:var(--accent)}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+
+.cb{position:relative;margin:0 0 14px;background:var(--code);border:1px solid var(--line);border-radius:6px}
+.cb pre{margin:0;padding:12px 52px 12px 14px;overflow-x:auto;font:13px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--text)}
+.cb pre code{background:none;border:0;padding:0;font:inherit}
+.cp{position:absolute;top:6px;right:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+  border:1px solid transparent;border-radius:5px;background:none;color:var(--muted);cursor:pointer}
+.cp:hover{background:var(--hover);border-color:var(--line);color:var(--text)}
+.cp.ok{color:#9ec59e}
+.cp .ck{display:none}.cp.ok .ck{display:block}.cp.ok .cc{display:none}
+
+.tw{overflow-x:auto;margin:0 0 14px;border:1px solid var(--line);border-radius:6px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500;background:var(--panel)}
+tr:last-child td{border-bottom:0}
+td:first-child{white-space:nowrap}
+td code{background:none;border:0;padding:0}
+ol,ul{margin:0 0 12px;padding-left:22px}
+li{margin:3px 0}
+.note{border-left:2px solid #4a4a4a;padding:4px 14px;color:var(--muted);margin:0 0 14px}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.links a{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--line);border-radius:6px;text-decoration:none;color:var(--text)}
+.links a:hover{background:var(--hover)}
+@media(max-width:700px){main{padding:24px 16px 60px}}
+</style>
 </head>
-<body class="w-screen h-screen flex flex-col justify-between items-center relative select-none">
+<body class="collapsed">
 
-    <!-- Pure Canvas Animation Background -->
-    <canvas id="cosmicCanvas"></canvas>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+<symbol id="i-term" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3"/><path d="M13 15h4"/></symbol>
+<symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4"/><path d="M12 17.5v.5"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-chev" viewBox="0 0 24 24"><path d="m14 7-5 5 5 5"/></symbol>
+</defs>
+</svg>
 
-    <!-- Header / Status Bar -->
-    <header class="ui-layer w-full p-6 flex justify-between items-center max-w-6xl mx-auto">
-        <div class="flex items-center space-x-3">
-            <div class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></div>
-            <span class="text-xs tracking-wider uppercase text-gray-400 font-medium">Sequence: <span id="statusText" class="text-red-400">Drawing Constellation Tree</span></span>
-        </div>
-        <div class="flex items-center space-x-4">
-            <button id="replayBtn" class="interactive text-xs uppercase tracking-wider text-gray-400 hover:text-white bg-gray-900/80 hover:bg-gray-800 border border-gray-800 px-4 py-2 rounded-full transition-all flex items-center space-x-2">
-                <i class="fa-solid fa-rotate-right"></i>
-                <span>Replay</span>
-            </button>
-        </div>
-    </header>
+<aside id="side">
+  <div class="brand"><svg class="i"><use href="#i-lock"/></svg><span>LOCKCODE</span></div>
+  <nav id="nav">
+    <a href="#overview" title="Обзор"><svg class="i"><use href="#i-book"/></svg><span>Обзор</span></a>
+    <a href="#install" title="Установка"><svg class="i"><use href="#i-down"/></svg><span>Установка</span></a>
+    <a href="#start" title="Первый запуск"><svg class="i"><use href="#i-play"/></svg><span>Первый запуск</span></a>
+    <a href="#commands" title="Команды"><svg class="i"><use href="#i-term"/></svg><span>Команды</span></a>
+    <a href="#providers" title="Провайдеры"><svg class="i"><use href="#i-chip"/></svg><span>Провайдеры</span></a>
+    <a href="#config" title="Конфиг"><svg class="i"><use href="#i-file"/></svg><span>Конфиг</span></a>
+    <a href="#license" title="Лицензия"><svg class="i"><use href="#i-shield"/></svg><span>Лицензия</span></a>
+    <a href="#links" title="Ссылки"><svg class="i"><use href="#i-link"/></svg><span>Ссылки</span></a>
+  </nav>
+  <button id="tog" type="button" aria-label="Свернуть или развернуть список разделов"><svg class="i"><use href="#i-chev"/></svg><span>Свернуть</span></button>
+</aside>
 
-    <!-- Center Stage Container (npm Logo & Package info) -->
-    <main class="ui-layer flex-grow flex flex-col items-center justify-center text-center px-4">
-        <div id="npmContainer" class="fade-slide-up flex flex-col items-center">
-            <!-- npm Icon Badge -->
-            <div class="w-20 h-20 md:w-24 md:h-24 rounded-2xl glass-panel flex items-center justify-center mb-6 pulse-subtle border border-red-500/30">
-                <i class="fa-brands fa-npm text-red-500 text-5xl md:text-6xl"></i>
-            </div>
-            <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-400 mb-2">
-                @zapl/lockcode
-            </h1>
-            <p class="text-gray-400 text-sm md:text-base max-w-md font-light">
-                Secure cryptographic token generation & locking utilities for modern workflows.
-            </p>
-        </div>
-    </main>
+<main>
+<div class="wrap">
 
-    <!-- Bottom Action Area -->
-    <footer class="ui-layer w-full pb-10 flex justify-center items-center px-4 max-w-6xl mx-auto">
-        <div id="buttonContainer" class="fade-slide-up">
-            <!-- Button with exact wording: Open in [icon] (no redundant npm word at the end) -->
-            <a href="https://www.npmjs.com/package/@zapl/lockcode" target="_blank" rel="noopener noreferrer" 
-               class="interactive glow-btn text-white font-semibold text-base md:text-lg px-8 py-4 rounded-full flex items-center space-x-3 group">
-                <span class="tracking-wide">Open in</span>
-                <span class="bg-white/10 px-3 py-1.5 rounded-lg flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                    <i class="fa-brands fa-npm text-white text-xl"></i>
-                </span>
-                <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform ml-1"></i>
-            </a>
-        </div>
-    </footer>
+<section id="overview">
+  <h1>LOCKCODE</h1>
+  <p class="lead">Терминальный AI-агент в стиле opencode: пиксельный логотип, карточка сессии, промпт и слэш-команды. Запросы уходят напрямую к провайдеру по OpenAI-совместимому API — без прокси и посредников.</p>
+  <p>Пакет: <code>@zapl/lockcode</code>. Имя команды в терминале — <code>lockcode</code>.</p>
+</section>
 
-    <!-- Pure HTML5 Canvas & Vanilla JS Animation Engine -->
-    <script>
-        window.addEventListener('load', () => {
-            const canvas = document.getElementById('cosmicCanvas');
-            const ctx = canvas.getContext('2d');
-            
-            let width, height;
-            function resize() {
-                width = canvas.width = window.innerWidth;
-                height = canvas.height = window.innerHeight;
-            }
-            window.addEventListener('resize', resize);
-            resize();
+<section id="install">
+  <h2><svg class="i"><use href="#i-down"/></svg>Установка</h2>
+  <p>Требуется Node.js 14 или новее. Глобальная установка:</p>
+  <div class="cb"><pre><code>npm install -g @zapl/lockcode</code></pre><button class="cp" type="button" aria-label="Копировать"><svg class="i cc"><use href="#i-copy"/></svg><svg class="i ck"><use href="#i-check"/></svg></button></div>
+  <p>Запуск из любой директории:</p>
+  <div class="cb"><pre><code>lockcode</code></pre><button class="cp" type="button" aria-label="Копировать"><svg class="i cc"><use href="#i-copy"/></svg><svg class="i ck"><use href="#i-check"/></svg></button></div>
+  <p>Без глобальной установки:</p>
+  <div class="cb"><pre><code>npx @zapl/lockcode</code></pre><button class="cp" type="button" aria-label="Копировать"><svg class="i cc"><use href="#i-copy"/></svg><svg class="i ck"><use href="#i-check"/></svg></button></div>
+</section>
 
-            // Background subtle stars
-            const stars = Array.from({ length: 120 }, () => ({
-                x: Math.random() * width,
-                y: Math.random() * height,
-                radius: Math.random() * 1.2,
-                alpha: Math.random() * 0.6 + 0.2
-            }));
+<section id="start">
+  <h2><svg class="i"><use href="#i-play"/></svg>Первый запуск</h2>
+  <ol>
+    <li>Введите в терминал команду <code>lockcode</code>.</li>
+    <li>Введите <code>/add</code> — провайдер, название модели, API-ключ.</li>
+    <li>Напишите сообщение обычным текстом.</li>
+  </ol>
+  <div class="cb"><pre><code>/add</code></pre><button class="cp" type="button" aria-label="Копировать"><svg class="i cc"><use href="#i-copy"/></svg><svg class="i ck"><use href="#i-check"/></svg></button></div>
+  <p>Ключ хранится локально в конфиге LOCKCODE и уходит только выбранному провайдеру.</p>
+  <p>Пример сессии:</p>
+  <div class="cb"><pre><code>User: Что такое GPT?
 
-            let animationStartTime = performance.now();
-            let phase = 0; // 0: Tree growth, 1: Morph to ball, 2: Sphere float & rotate
+AI: GPT (Generative Pre-trained Transformer) — это тип нейросетевой
+архитектуры и семейство языковых моделей, которые генерируют и понимают
+текст.
 
-            const statusText = document.getElementById('statusText');
-            const npmContainer = document.getElementById('npmContainer');
-            const buttonContainer = document.getElementById('buttonContainer');
-            let uiRevealed = false;
+Ключевые моменты:
+• Генеративная: создаёт новый текст (ответы, код, статьи), а не только
+  классифицирует готовый.
+• Предобученная: сначала обучается на огромном массиве текстов, усваивая
+  закономерности языка и факты.
+• Transformer: использует архитектуру «трансформер» с механизмом внимания
+  (attention) для учёта контекста в длинных последовательностях.
+• Токены и вероятности: текст разбивается на токены; модель предсказывает
+  следующий токен по вероятности, повторяя это шаг за шагом.
+• Инструкции и RLHF: после предобучения дообучают на инструкциях и с
+  помощью обратной связи от людей (RLHF), чтобы ответы были полезнее и
+  безопаснее.
+• Контекстное окно: модель «видит» ограниченный объём токенов диалога; всё
+  за пределами окна забывается в рамках сессии.
+• Сильные стороны: связная речь, программирование, суммаризация,
+  объяснение сложных тем простым языком.
+• Ограничения: возможны галлюцинации (ложные, но правдоподобные
+  утверждения), зависимость от данных обучения, нет «понимания» как у
+  человека, знания ограничены датой обучения.
 
-            const rootX = () => width / 2;
-            const rootY = () => height * 0.62;
+Если нужно, могу привести примеры, где GPT особенно полезен, или объяснить
+разницу между версиями (например, GPT-3.5, GPT-4) простыми словами.
+──────────────────────────────────────────────────────────────────────────
+DeepSeek V4.1 : 322 токенов</code></pre><button class="cp" type="button" aria-label="Копировать"><svg class="i cc"><use href="#i-copy"/></svg><svg class="i ck"><use href="#i-check"/></svg></button></div>
+</section>
 
-            let treeNodes = [];
-            let connections = [];
+<section id="commands">
+  <h2><svg class="i"><use href="#i-term"/></svg>Команды</h2>
+  <p>Слэш-команды вводятся прямо в промпте.</p>
+  <div class="tw"><table>
+    <tr><th>Команда</th><th>Действие</th></tr>
+    <tr><td><code>/help</code></td><td>Список вспомогательных команд</td></tr>
+    <tr><td><code>/mode</code></td><td>Выбрать режим работы модели</td></tr>
+    <tr><td><code>/modeagent</code></td><td>Выбрать режим работы агента</td></tr>
+    <tr><td><code>/submodels</code></td><td>Модели провайдера и переключение</td></tr>
+    <tr><td><code>/server</code></td><td>Общий прокси вместо локального ключа</td></tr>
+    <tr><td><code>/models</code></td><td>Список доступных моделей</td></tr>
+    <tr><td><code>/add</code></td><td>Добавить модель по API</td></tr>
+    <tr><td><code>/model &lt;имя&gt;</code></td><td>Выбрать модель</td></tr>
+    <tr><td><code>/model -del &lt;имя&gt;</code></td><td>Удалить модель из списка</td></tr>
+    <tr><td><code>/chat</code></td><td>Выбрать чат из списка</td></tr>
+    <tr><td><code>/cleanmemory</code></td><td>Очистить память</td></tr>
+    <tr><td><code>/connectors</code></td><td>Доступ к сервисам</td></tr>
+    <tr><td><code>/keyfile</code></td><td>Взять ключ из сервера</td></tr>
+    <tr><td><code>/limits</code></td><td>Узнать лимиты моделей</td></tr>
+    <tr><td><code>/folder</code></td><td>Сменить рабочую директорию</td></tr>
+    <tr><td><code>/lang</code></td><td>Сменить язык</td></tr>
+    <tr><td><code>/clear</code></td><td>Очистить строку состояния</td></tr>
+    <tr><td><code>/exit</code></td><td>Завершить работу</td></tr>
+  </table></div>
+  <p>Примеры:</p>
+  <div class="cb"><pre><code>/model deepseek-chat</code></pre><button class="cp" type="button" aria-label="Копировать"><svg class="i cc"><use href="#i-copy"/></svg><svg class="i ck"><use href="#i-check"/></svg></button></div>
+  <div class="cb"><pre><code>/model -del deepseek-chat</code></pre><button class="cp" type="button" aria-label="Копировать"><svg class="i cc"><use href="#i-copy"/></svg><svg class="i ck"><use href="#i-check"/></svg></button></div>
+  <p>Клавиши: <code>Ctrl+C</code> — выход, <code>↑</code> / <code>↓</code> — история ввода.</p>
+</section>
 
-            // Programmatically construct a minimalist tree hierarchy
-            function initTree() {
-                treeNodes = [];
-                connections = [];
+<section id="providers">
+  <h2><svg class="i"><use href="#i-chip"/></svg>Провайдеры</h2>
+  <p>Поддерживаются OpenAI-совместимые API: OpenRouter, DeepSeek, OpenAI, Mistral, Gemini, GigaChat, а также любой свой эндпоинт через пункт <code>Custom</code>.</p>
+  <p>Для <code>Custom</code> нужен базовый URL вида:</p>
+  <div class="cb"><pre><code>https://host/v1</code></pre><button class="cp" type="button" aria-label="Копировать"><svg class="i cc"><use href="#i-copy"/></svg><svg class="i ck"><use href="#i-check"/></svg></button></div>
+</section>
 
-                const rx = rootX();
-                const ry = rootY();
+<section id="config">
+  <h2><svg class="i"><use href="#i-file"/></svg>Где лежит конфиг</h2>
+  <div class="tw"><table>
+    <tr><th>ОС</th><th>Путь</th></tr>
+    <tr><td>Windows</td><td><code>%APPDATA%\lockcode-nodejs\Config\config.json</code></td></tr>
+    <tr><td>macOS</td><td><code>~/Library/Application Support/lockcode-nodejs/Config/config.json</code></td></tr>
+    <tr><td>Linux</td><td><code>~/.config/lockcode-nodejs/config.json</code></td></tr>
+  </table></div>
+  <p>Linux:</p>
+  <div class="cb"><pre><code>~/.config/lockcode-nodejs/config.json</code></pre><button class="cp" type="button" aria-label="Копировать"><svg class="i cc"><use href="#i-copy"/></svg><svg class="i ck"><use href="#i-check"/></svg></button></div>
+  <p class="note">Ключи лежат в этом файле открытым текстом — не выкладывайте его в репозиторий.</p>
+</section>
 
-                // Root node
-                treeNodes.push({ id: 0, x: rx, y: ry, tx: rx, ty: ry });
+<section id="license">
+  <h2><svg class="i"><use href="#i-shield"/></svg>Лицензия</h2>
+  <p>MIT — см. <a href="https://github.com/ZAPL-corp/lockcode/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a>.</p>
+</section>
 
-                // Main trunk
-                let parentId = 0;
-                let currentY = ry;
-                for (let i = 1; i <= 6; i++) {
-                    currentY -= 28;
-                    treeNodes.push({ id: i, x: rx, y: currentY, tx: rx, ty: currentY });
-                    connections.push({ from: parentId, to: i });
-                    parentId = i;
-                }
+<section id="links">
+  <h2><svg class="i"><use href="#i-link"/></svg>Ссылки</h2>
+  <div class="links">
+    <a href="https://github.com/ZAPL-corp/lockcode" target="_blank" rel="noopener"><svg class="i"><use href="#i-link"/></svg>GitHub</a>
+    <a href="https://www.npmjs.com/package/@zapl/lockcode" target="_blank" rel="noopener"><svg class="i"><use href="#i-link"/></svg>npm</a>
+    <a href="https://lockcode.pages.dev" target="_blank" rel="noopener"><svg class="i"><use href="#i-link"/></svg>Cloudflare Pages</a>
+    <a href="https://zapl-corp.github.io/lockcode/" target="_blank" rel="noopener"><svg class="i"><use href="#i-link"/></svg>GitHub Pages</a>
+  </div>
+</section>
 
-                // Recursive procedural branch generator
-                function buildBranches(pId, depth, cx, cy, spreadAngle) {
-                    if (depth > 4) return;
-                    const count = 2;
-                    for (let c = 0; c < count; c++) {
-                        const angle = -Math.PI / 2 + (c === 0 ? -spreadAngle : spreadAngle) + (Math.random() - 0.5) * 0.15;
-                        const length = 35 + Math.random() * 25;
-                        const nx = cx + Math.cos(angle) * length;
-                        const ny = cy + Math.sin(angle) * length;
+</div>
+</main>
 
-                        const newId = treeNodes.length;
-                        treeNodes.push({ id: newId, x: cx, y: cy, tx: nx, ty: ny });
-                        connections.push({ from: pId, to: newId });
+<script>
+(function(){
+  var body=document.body,label=document.querySelector('#tog span');
+  function setC(c){body.classList.toggle('collapsed',c);label.textContent=c?'Развернуть':'Свернуть';}
+  var saved=null;try{saved=localStorage.getItem('lc-side');}catch(e){}
+  setC(saved?saved==='1':window.innerWidth<900);
+  document.getElementById('tog').onclick=function(){
+    var c=!body.classList.contains('collapsed');setC(c);
+    try{localStorage.setItem('lc-side',c?'1':'0');}catch(e){}
+  };
 
-                        buildBranches(newId, depth + 1, nx, ny, spreadAngle * 0.75);
-                    }
-                }
+  document.querySelectorAll('.cp').forEach(function(b){
+    b.onclick=function(){
+      var t=b.parentNode.querySelector('code').innerText;
+      function done(){b.classList.add('ok');setTimeout(function(){b.classList.remove('ok');},1400);}
+      function fb(){var a=document.createElement('textarea');a.value=t;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy');done();}catch(e){}document.body.removeChild(a);}
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,fb);}else{fb();}
+    };
+  });
 
-                buildBranches(parentId, 1, rx, currentY, 0.65);
-
-                // Assign target coordinates on a sphere for ball morphing phase
-                const ballRadius = 75;
-                treeNodes.forEach((node, index) => {
-                    const phi = Math.acos(-1 + (2 * index) / treeNodes.length);
-                    const theta = Math.sqrt(treeNodes.length * Math.PI) * phi;
-                    
-                    node.ballX = rx + ballRadius * Math.cos(theta) * Math.sin(phi);
-                    node.ballY = (ry - 70) + ballRadius * Math.sin(theta) * Math.sin(phi);
-                    node.ballZ = ballRadius * Math.cos(phi);
-                });
-            }
-
-            initTree();
-
-            document.getElementById('replayBtn').addEventListener('click', () => {
-                animationStartTime = performance.now();
-                phase = 0;
-                uiRevealed = false;
-                npmContainer.classList.remove('active');
-                buttonContainer.classList.remove('active');
-                initTree();
-            });
-
-            function render(currentTime) {
-                const elapsed = (currentTime - animationStartTime) / 1000;
-                ctx.clearRect(0, 0, width, height);
-
-                // Draw background stars
-                ctx.fillStyle = '#ffffff';
-                stars.forEach(s => {
-                    ctx.globalAlpha = s.alpha;
-                    ctx.beginPath();
-                    ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                });
-
-                // Control sequence timelines
-                if (elapsed < 3.2) {
-                    phase = 0;
-                    statusText.textContent = "Drawing Constellation Tree...";
-                } else if (elapsed < 6.0) {
-                    phase = 1;
-                    statusText.textContent = "Morphing into Energy Sphere...";
-                } else {
-                    phase = 2;
-                    statusText.textContent = "npm Package Ready";
-                    if (!uiRevealed) {
-                        uiRevealed = true;
-                        npmContainer.classList.add('active');
-                        setTimeout(() => buttonContainer.classList.add('active'), 350);
-                    }
-                }
-
-                const rx = rootX();
-                const ry = rootY() - 60;
-
-                // Position calculation per phase with smooth easing
-                treeNodes.forEach((node) => {
-                    if (phase === 0) {
-                        const p = Math.min(1, elapsed / 2.8);
-                        const ease = 1 - Math.pow(1 - p, 3);
-                        node.currentX = rx + (node.tx - rx) * ease;
-                        node.currentY = (rootY()) + (node.ty - (rootY())) * ease;
-                        node.currentAlpha = ease;
-                    } else if (phase === 1) {
-                        const p = Math.min(1, (elapsed - 3.2) / 2.2);
-                        const ease = p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p;
-                        node.currentX = node.tx + (node.ballX - node.tx) * ease;
-                        node.currentY = node.ty + (node.ballY - node.ty) * ease;
-                        node.currentAlpha = 1.0;
-                    } else {
-                        // Phase 2: Smooth 3D Y-axis rotation of the sphere
-                        const angle = currentTime * 0.0006;
-                        const cosA = Math.cos(angle);
-                        const sinA = Math.sin(angle);
-
-                        const bx = node.ballX - rx;
-                        const by = node.ballY - ry;
-                        const bz = node.ballZ;
-
-                        const rotX = bx * cosA + bz * sinA;
-                        const rotZ = -bx * sinA + bz * cosA;
-
-                        node.currentX = rx + rotX;
-                        node.currentY = ry + by;
-                        node.currentZ = rotZ;
-                        node.currentAlpha = 0.75 + (rotZ / 150);
-                    }
-                });
-
-                // Render connections / lines
-                ctx.lineWidth = phase === 2 ? 0.7 : 1.1;
-                connections.forEach(conn => {
-                    const f = treeNodes[conn.from];
-                    const t = treeNodes[conn.to];
-
-                    if (phase === 2) {
-                        const dist = Math.hypot(f.currentX - t.currentX, f.currentY - t.currentY);
-                        if (dist < 70) {
-                            ctx.strokeStyle = `rgba(239, 68, 68, ${0.2 * ((f.currentAlpha + t.currentAlpha) / 2)})`;
-                            ctx.beginPath();
-                            ctx.moveTo(f.currentX, f.currentY);
-                            ctx.lineTo(t.currentX, t.currentY);
-                            ctx.stroke();
-                        }
-                    } else {
-                        const alpha = Math.min(f.currentAlpha, t.currentAlpha);
-                        ctx.strokeStyle = `rgba(239, 68, 68, ${0.35 * alpha})`;
-                        ctx.beginPath();
-                        ctx.moveTo(f.currentX, f.currentY);
-                        ctx.lineTo(t.currentX, t.currentY);
-                        ctx.stroke();
-                    }
-                });
-
-                // Render nodes
-                treeNodes.forEach(node => {
-                    ctx.fillStyle = '#ef4444';
-                    ctx.shadowColor = '#ef4444';
-                    ctx.shadowBlur = phase === 2 ? 10 : 6;
-                    ctx.globalAlpha = Math.max(0.2, node.currentAlpha);
-
-                    ctx.beginPath();
-                    const radius = phase === 2 ? Math.max(1, 2 + (node.currentZ || 0) * 0.02) : 2.2;
-                    ctx.arc(node.currentX, node.currentY, radius, 0, Math.PI * 2);
-                    ctx.fill();
-                });
-                ctx.shadowBlur = 0;
-
-                // Core glow in sphere phase
-                if (phase >= 1) {
-                    const grad = ctx.createRadialGradient(rx, ry, 5, rx, ry, 85);
-                    grad.addColorStop(0, 'rgba(203, 56, 55, 0.2)');
-                    grad.addColorStop(1, 'transparent');
-                    ctx.fillStyle = grad;
-                    ctx.beginPath();
-                    ctx.arc(rx, ry, 85, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                requestAnimationFrame(render);
-            }
-
-            requestAnimationFrame(render);
-        });
-    </script>
+  var links=[].slice.call(document.querySelectorAll('#nav a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  function spy(){
+    var y=window.scrollY+120,cur=0;
+    secs.forEach(function(s,i){if(s.offsetTop<=y)cur=i;});
+    if(window.innerHeight+window.scrollY>=document.body.scrollHeight-4)cur=secs.length-1;
+    links.forEach(function(a,i){a.classList.toggle('on',i===cur);});
+  }
+  window.addEventListener('scroll',spy,{passive:true});spy();
+})();
+</script>
 </body>
 </html>
