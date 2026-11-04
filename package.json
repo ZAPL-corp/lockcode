@@ -1,14 +1,14 @@
-{
+﻿{
   "name": "@zapl/lockcode",
-  "version": "1.1.1",
-  "description": "Terminal AI coding agent with an opencode-style interface",
+  "version": "1.4.1",
+  "description": "Adding your AI in nonservers steeling API's",
   "main": "index.js",
   "bin": {
     "lockcode": "index.js"
   },
   "files": [
     "index.js",
-    "README.md",
+    "certs",
     "LICENSE"
   ],
   "scripts": {
@@ -37,3 +37,4 @@
     "conf": "^10.2.0"
   }
 }
+
